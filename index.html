@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NSCC - Daily Noon Report</title>
+<style>
+:root{--navy:#17365d;--blue:#2463a5;--bg:#f3f6fa;--line:#dce3ed;--text:#263445}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font:14px Arial,sans-serif;color:var(--text)}
+header{background:var(--navy);color:white;padding:22px 5%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+header h1{font-size:21px;margin:0}
+header p{margin:6px 0 0;color:#d6e5f5}
+main{max-width:1250px;margin:25px auto;padding:0 16px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+button,.tab{border:0;border-radius:6px;padding:10px 15px;cursor:pointer;font-weight:600}
+.tab{background:white;color:var(--navy);border:1px solid var(--line)}
+.tab.active,button.primary{background:var(--blue);color:white}
+button.secondary{background:#e8eef6;color:var(--navy)}
+button.danger{background:#fff0f0;color:#a32929}
+.panel{background:white;border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:18px}
+.panel h2{font-size:17px;color:var(--navy);margin:0 0 16px}
+.panel h3{font-size:14px;color:var(--blue);margin:18px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.field{min-width:0}
+label{display:block;font-weight:600;font-size:12px;margin-bottom:6px;color:#526176}
+input,select,textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font:14px Arial;background:white;color:#263445}
+textarea{min-height:65px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid #b8d5f5;border-color:var(--blue)}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+.preview{white-space:pre-wrap;background:#fbfcfe;border:1px solid var(--line);padding:18px;border-radius:7px;font:13px/1.65 Consolas,monospace;overflow-wrap:anywhere}
+.notice{padding:12px;border-radius:6px;margin:10px 0;background:#fff7df;color:#795500}
+.good{background:#e8f7ed;color:#176b37}
+.error{background:#fff0f0;color:#9b2424}
+.small{font-size:12px;color:#64748b}
+table{width:100%;border-collapse:collapse}
+td,th{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
+th{background:#f2f5f9;color:var(--navy)}
+.hidden{display:none}
+@media(max-width:750px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}header{padding:18px}}
+@media(max-width:480px){.grid{grid-template-columns:1fr}.panel{padding:14px}}
+</style>
+</head>
+<body>
+<header>
+ <div><h1>NSCC | DAILY NOON REPORT</h1><p>Ship Management Section · Vessel Reporting System</p></div>
+ <div id="today" class="small" style="color:white"></div>
+</header>
+<main>
+<div class="tabs">
+ <button class="tab active" data-tab="entry">New Report</button>
+ <button class="tab" data-tab="preview">Report Preview</button>
+ <button class="tab" data-tab="history">Report History</button>
+ <button class="tab" data-tab="vessels">Vessel Profiles</button>
+</div>
+
+<section id="entry">
+<div class="panel">
+<h2>General Information</h2>
+<div class="grid">
+<div class="field"><label>Vessel</label><select id="vessel" onchange="vesselChanged()"></select></div>
+<div class="field"><label>Report Date</label><input id="date" type="date"></div>
+<div class="field"><label>Reference (REF)</label><input id="ref" placeholder="BRV 1087"></div>
+<div class="field"><label>Voyage (VOY)</label><input id="voy" placeholder="540"></div>
+<div class="field"><label>Report Type</label><input value="NOON AT SEA" disabled></div>
+<div class="field"><label>Destination</label><input id="destination" value="NGHI SON PLTSN"></div>
+</div>
+</div>
+
+<div class="panel">
+<h2>Navigation & Voyage Information</h2>
+<div class="grid">
+<div class="field"><label>A - Noon Position</label><input id="position" placeholder="15-48.5N /108-36.2E"></div>
+<div class="field"><label>B - ETA Local Time (HHMM)</label><input id="etaTime" placeholder="0900LT"></div>
+<div class="field"><label>B - ETA Date</label><input id="etaDate" type="date"></div>
+<div class="field"><label>C - Distance Run from R/UP ENG (NM)</label><input id="runup" type="number" step="any" placeholder="422"></div>
+<div class="field"><label>D - Hours from R/UP ENG</label><input id="hoursRunup" placeholder="01D14H30M"></div>
+<div class="field"><label>E - Distance to Go (NM)</label><input id="distanceToGo" type="number" step="any" placeholder="268"></div>
+<div class="field"><label>F - Distance Run (NM)</label><input id="distanceRun" type="number" step="any" placeholder="244"></div>
+<div class="field"><label>G - Hours Propelling</label><input id="propelling" placeholder="24H 00M"></div>
+<div class="field"><label>H - Noon Speed (KTS)</label><input id="speed" type="number" step="0.1" placeholder="10.1"></div>
+</div>
+<p class="small">Speed can be calculated from Distance Run / Hours Propelling. Manual input is always preserved.</p>
+<button class="secondary" onclick="calculateSpeed()">Calculate suggested speed</button>
+</div>
+
+<div class="panel">
+<h2>I - Consumption</h2>
+<h3>Total Consumption</h3>
+<div class="grid">
+<div class="field"><label>FO (MT)</label><input id="totalFO" type="number" step="any" placeholder="15.03"></div>
+<div class="field"><label>DO (MT)</label><input id="totalDO" type="number" step="any" value="0"></div>
+<div class="field"><label>CYL (LTR)</label><input id="totalCYL" type="number" step="any" placeholder="144"></div>
+<div class="field"><label>M/E SYS (LTR)</label><input id="totalMESYS" type="number" step="any" value="0"></div>
+<div class="field"><label>G/E SYS (LTR)</label><input id="totalGESYS" type="number" step="any" value="0"></div>
+<div class="field"><label>FW (MT)</label><input id="totalFW" type="number" step="any" placeholder="6"></div>
+</div>
+<h3>Main Engine (ME)</h3>
+<div class="grid">
+<div class="field"><label>FO (MT)</label><input id="meFO" type="number" step="any" placeholder="13.51"></div>
+<div class="field"><label>DO (MT)</label><input id="meDO" type="number" step="any" value="0"></div>
+<div class="field"><label>CYL (LTR)</label><input id="meCYL" type="number" step="any" placeholder="144"></div>
+<div class="field"><label>SYS (LTR)</label><input id="meSYS" type="number" step="any" value="0"></div>
+<div class="field"><label>Operating Hours</label><input id="meHours" placeholder="24H 00M"></div>
+</div>
+<h3>Generator Engine (GE)</h3>
+<div class="grid">
+<div class="field"><label>FO (MT)</label><input id="geFO" type="number" step="any" placeholder="1.52"></div>
+<div class="field"><label>DO (MT)</label><input id="geDO" type="number" step="any" value="0"></div>
+<div class="field"><label>SYS (LTR)</label><input id="geSYS" type="number" step="any" value="0"></div>
+<div class="field"><label>Generator / Operating Hours</label><input id="geHours" placeholder="GE3/24H 00M"></div>
+</div>
+<h3>Boiler</h3>
+<div class="grid">
+<div class="field"><label>FO (MT)</label><input id="boilerFO" type="number" step="any" value="0"></div>
+</div>
+<div class="actions"><button class="secondary" onclick="calculateFO()">Calculate total FO</button></div>
+</div>
+
+<div class="panel">
+<h2>J - ROB (Remaining on Board)</h2>
+<div class="grid">
+<div class="field"><label>FO (MT)</label><input id="robFO" type="number" step="any"></div>
+<div class="field"><label>DO (MT)</label><input id="robDO" type="number" step="any"></div>
+<div class="field"><label>CYL (LTR)</label><input id="robCYL" type="number" step="any"></div>
+<div class="field"><label>ME SYS (LTR)</label><input id="robMESYS" type="number" step="any"></div>
+<div class="field"><label>GE SYS (LTR)</label><input id="robGESYS" type="number" step="any"></div>
+<div class="field"><label>FW (MT)</label><input id="robFW" type="number" step="any"></div>
+</div>
+</div>
+
+<div class="panel">
+<h2>Vessel & Weather Conditions</h2>
+<div class="grid">
+<div class="field"><label>K - RPM</label><input id="rpm" type="number" step="any"></div>
+<div class="field"><label>L - AVR Pitch</label><input id="pitch" type="number" step="any"></div>
+<div class="field"><label>M - Ship Course</label><input id="course" type="number" step="any"></div>
+<div class="field"><label>N - Wind Direction</label><input id="windDirection" placeholder="NW"></div>
+<div class="field"><label>O - Wind Force (M/S)</label><input id="windForce" type="number" step="any"></div>
+<div class="field"><label>P - Wave Height (M)</label><input id="wave" type="number" step="any"></div>
+<div class="field"><label>Q - Barometer (HPA)</label><input id="barometer" type="number" step="any"></div>
+<div class="field"><label>R - Speed Mode</label><select id="speedMode"><option>NORMAL FULL</option><option>ECONOMICAL</option><option>SLOW STEAMING</option><option>MANOEUVRING</option><option>OTHER</option></select></div>
+<div class="field"><label>S - Remark</label><textarea id="remark"></textarea></div>
+</div>
+<div class="actions">
+<button class="primary" onclick="generate()">Generate Report</button>
+<button class="secondary" onclick="saveDraft()">Save Draft</button>
+<button class="secondary" onclick="clearForm()">Clear Form</button>
+</div>
+</div>
+<div id="validation"></div>
+</section>
+
+<section id="preview" class="hidden">
+<div class="panel">
+<h2>Report Preview</h2>
+<div id="report" class="preview">Complete the report form and click Generate Report.</div>
+<div class="actions">
+<button class="primary" onclick="copyReport()">Copy Report</button>
+<button class="secondary" onclick="downloadReport()">Download TXT</button>
+<button class="secondary" onclick="saveReport()">Save to History</button>
+</div>
+</div>
+</section>
+
+<section id="history" class="hidden">
+<div class="panel">
+<h2>Report History</h2>
+<div id="historyList"></div>
+</div>
+</section>
+
+<section id="vessels" class="hidden">
+<div class="panel">
+<h2>Vessel Profiles</h2>
+<p class="small">Add vessels to use the same reporting form. Profiles are saved in this browser.</p>
+<div class="grid">
+<div class="field"><label>Vessel Name</label><input id="newVessel" placeholder="M/V CONFIDENCE"></div>
+<div class="field"><label>Reference Prefix</label><input id="newPrefix" placeholder="CNF"></div>
+<div class="field"><label>Default Voyage</label><input id="newVoyage" placeholder="540"></div>
+</div>
+<div class="actions"><button class="primary" onclick="addVessel()">Add Vessel</button></div>
+<div id="vesselList"></div>
+</div>
+</section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const fields=['date','ref','voy','destination','position','etaTime','etaDate','runup','hoursRunup','distanceToGo','distanceRun','propelling','speed','totalFO','totalDO','totalCYL','totalMESYS','totalGESYS','totalFW','meFO','meDO','meCYL','meSYS','meHours','geFO','geDO','geSYS','geHours','boilerFO','robFO','robDO','robCYL','robMESYS','robGESYS','robFW','rpm','pitch','course','windDirection','windForce','wave','barometer','speedMode','remark'];
+let vessels=JSON.parse(localStorage.getItem('nsccVessels')||'null')||[
+{name:'M/V BRAVE',prefix:'BRV',voy:'540'},
+{name:'M/V CONFIDENCE',prefix:'CNF',voy:''},
+{name:'M/V DEVELOPMENT',prefix:'DEV',voy:''},
+{name:'M/V FORTUNE',prefix:'FRT',voy:''}
+];
+let reports=JSON.parse(localStorage.getItem('nsccReports')||'[]');
+let currentReport='';
+let currentId=null;
+
+function persist(){
+ localStorage.setItem('nsccVessels',JSON.stringify(vessels));
+ localStorage.setItem('nsccReports',JSON.stringify(reports));
+}
+function ordinalDate(value){
+ if(!value)return '';
+ const d=new Date(value+'T12:00:00');
+ const day=d.getDate(),suffix=day%10===1&&day!==11?'ST':day%10===2&&day!==12?'ND':day%10===3&&day!==13?'RD':'TH';
+ return String(day).padStart(2,'0')+suffix+' '+d.toLocaleString('en-GB',{month:'short'}).toUpperCase()+','+d.getFullYear();
+}
+function init(){
+ $('today').textContent=new Date().toLocaleDateString();
+ $('date').value=new Date().toISOString().slice(0,10);
+ renderVessels();
+ vesselChanged();
+ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+ renderHistory();
+}
+function renderVessels(){
+ $('vessel').innerHTML=vessels.map((v,i)=>`<option value="${i}">${v.name}</option>`).join('');
+ $('vesselList').innerHTML=vessels.map((v,i)=>`<p>${v.name} (${v.prefix}) <button class="danger" onclick="removeVessel(${i})">Delete</button></p>`).join('');
+}
+function vesselChanged(){
+ const v=vessels[+$('vessel').value];
+ if(!v)return;
+ $('voy').value=v.voy||'';
+ const previous=reports.filter(r=>r.vessel===v.name).sort((a,b)=>b.date.localeCompare(a.date))[0];
+ const number=previous?parseInt((previous.ref.match(/(\d+)\s*$/)||[])[1]||0)+1:1;
+ $('ref').value=v.prefix+' '+String(number).padStart(4,'0');
+}
+function addVessel(){
+ const name=$('newVessel').value.trim().toUpperCase(),prefix=$('newPrefix').value.trim().toUpperCase();
+ if(!name||!prefix){alert('Enter vessel name and reference prefix.');return}
+ vessels.push({name,prefix,voy:$('newVoyage').value.trim()});
+ persist();renderVessels();$('vessel').value=vessels.length-1;vesselChanged();
+ $('newVessel').value=$('newPrefix').value=$('newVoyage').value='';
+}
+function removeVessel(i){
+ if(vessels.length===1){alert('At least one vessel profile is required.');return}
+ if(confirm('Delete this vessel profile?')){vessels.splice(i,1);persist();renderVessels();vesselChanged()}
+}
+function val(id){return $(id).value.trim()}
+function num(id){return val(id)===''?null:Number(val(id))}
+function fmt(id,unit,dec=2){
+ const v=num(id);return v===null?'':v.toFixed(dec).replace(/\.?0+$/,'')+unit;
+}
+function calculateFO(){
+ const a=['meFO','geFO','boilerFO'].map(num);
+ if(a.some(x=>x===null)){alert('Enter ME, GE and Boiler FO first.');return}
+ $('totalFO').value=(a[0]+a[1]+a[2]).toFixed(2);
+}
+function calculateSpeed(){
+ const distance=num('distanceRun');
+ const hours=val('propelling').match(/(\d+)\s*H\s*(\d+)?\s*M/i);
+ if(distance===null||!hours){alert('Enter Distance Run and Propelling Hours, e.g. 24H 00M.');return}
+ const h=Number(hours[1])+Number(hours[2]||0)/60;
+ if(!h){alert('Propelling hours must be greater than zero.');return}
+ $('speed').value=(distance/h).toFixed(1);
+}
+function generate(){
+ const v=vessels[+$('vessel').value];
+ if(!v){alert('Select a vessel.');return}
+ const date=ordinalDate(val('date')),eta=val('etaTime')&&val('etaDate')?val('etaTime').replace(/LT$/i,'')+'LT/'+ordinalDate(val('etaDate')):'';
+ const lines=[
+ `DATE: ${date}`,
+ '',
+ `REF: ${val('ref')}`,
+ '',
+ `FROM: ${v.name}`,
+ '',
+ `VOY: ${val('voy')}`,
+ '',
+ 'NOON AT SEA',
+ '',
+ 'DEAR SIRS,',
+ '',
+ `A/NOON PSN: ${val('position')}`,
+ `B/ETA ${val('destination')}: ${eta}`,
+ `C/DIST RUN FROM R/UP ENG: ${fmt('runup','NM')}`,
+ `D/HRS FROM R/UP ENG: ${val('hoursRunup')}`,
+ `E/DIST TO GO: ${fmt('distanceToGo','NM')}`,
+ `F/DISTANCE RUN: ${fmt('distanceRun','NM')}`,
+ `G/HRS PROPELLING: ${val('propelling')}`,
+ `H/NOON SPEED: ${fmt('speed','KTS',1)}`,
+ `I/CONS: FO/${fmt('totalFO','MT')};DO/${fmt('totalDO','MT')};CYL/${fmt('totalCYL','LTR')};M/E SYS/${fmt('totalMESYS','LTR')};G/E SYS/${fmt('totalGESYS','LTR')};FW/${fmt('totalFW','MT')}`,
+ '',
+ `- ME: FO/${fmt('meFO','MT')};DO/${fmt('meDO','MT')};CYL/${fmt('meCYL','LTR')};SYS/${fmt('meSYS','LTR')}/${val('meHours')}`,
+ `- GE: FO/${fmt('geFO','MT')};DO/${fmt('geDO','MT')};SYS/${fmt('geSYS','LTR')}(${val('geHours')})`,
+ `- BOILER: FO/${fmt('boilerFO','MT')}`,
+ '',
+ `J/ROB: FO/${fmt('robFO','MT')}; DO/${fmt('robDO','MTS')}; CYL/${fmt('robCYL','LTRS')}; ME SYS/${fmt('robMESYS','LTRS')}; GE SYS/${fmt('robGESYS','LTRS')}; FW/${fmt('robFW','MTS')}`,
+ `K/RPM: ${val('rpm')}`,
+ `L/AVR PITCH: ${val('pitch')}`,
+ `M/SHIP COURSE: ${val('course')}`,
+ `N/WIND DIRECTION: ${val('windDirection')}`,
+ `O/WIND FORCE: ${fmt('windForce','M/S',1)}`,
+ `P/WAVE HEIGHT: ${fmt('wave','M',1)}`,
+ `Q/BAROMETER: ${val('barometer')}`,
+ `R/SPEED MODE: ${val('speedMode')}`,
+ `S/REMARK: ${val('remark')}`
+ ];
+ currentReport=lines.join('\n');
+ $('report').textContent=currentReport;
+ currentId=null;
+ validate();
+ showTab('preview');
+}
+function validate(){
+ const warnings=[];
+ const total=num('totalFO'),me=num('meFO'),ge=num('geFO'),boiler=num('boilerFO');
+ if([total,me,ge,boiler].every(x=>x!==null)&&Math.abs(total-me-ge-boiler)>0.02)warnings.push('Total FO does not equal ME + GE + Boiler FO.');
+ const dist=num('distanceRun'),speed=num('speed');
+ const match=val('propelling').match(/(\d+)\s*H\s*(\d+)?\s*M/i);
+ if(dist!==null&&speed!==null&&match){
+  const hrs=Number(match[1])+Number(match[2]||0)/60;
+  if(hrs>0&&Math.abs(dist/hrs-speed)>0.3)warnings.push('Calculated speed differs from entered Noon Speed.');
+ }
+ for(const id of ['runup','distanceToGo','distanceRun','totalFO','totalDO','totalCYL','robFO','robDO','robCYL','windForce','wave']){
+  if(num(id)!==null&&num(id)<0)warnings.push(id+': negative value detected.');
+ }
+ const prev=reports.filter(r=>r.vessel===vessels[+$('vessel').value]?.name&&r.date<val('date')).sort((a,b)=>b.date.localeCompare(a.date))[0];
+ if(prev&&num('robFO')!==null&&num('totalFO')!==null&&prev.data.robFO!==''&&prev.data.robFO!==undefined){
+  const expected=Number(prev.data.robFO)-num('totalFO');
+  if(Math.abs(expected-num('robFO'))>0.1)warnings.push('FO ROB does not reconcile with previous report and consumption. Check bunkering, transfers or adjustments.');
+ }
+ $('validation').innerHTML=warnings.length?'<div class="notice">'+warnings.map(x=>'⚠ '+x).join('<br>')+'</div>':'<div class="notice good">✓ No obvious calculation inconsistencies detected. Please verify all operational data before sending.</div>';
+}
+function getData(){
+ const data={};fields.forEach(id=>data[id]=val(id));return data;
+}
+function saveDraft(){
+ localStorage.setItem('nsccDraft',JSON.stringify(getData()));
+ alert('Draft saved in this browser.');
+}
+function saveReport(){
+ if(!currentReport){alert('Generate a report first.');return}
+ const item={id:Date.now(),date:val('date'),ref:val('ref'),voy:val('voy'),vessel:vessels[+$('vessel').value].name,report:currentReport,data:getData()};
+ if(currentId){const i=reports.findIndex(r=>r.id===currentId);if(i>=0)reports[i]=item;else reports.unshift(item)}
+ else reports.unshift(item);
+ currentId=item.id;persist();renderHistory();alert('Report saved to history.');
+}
+function renderHistory(){
+ if(!$('historyList'))return;
+ $('historyList').innerHTML=reports.length?`<table><thead><tr><th>Date</th><th>Vessel</th><th>REF</th><th>VOY</th><th>Actions</th></tr></thead><tbody>${reports.map(r=>`<tr><td>${r.date}</td><td>${r.vessel}</td><td>${r.ref}</td><td>${r.voy}</td><td><button class="secondary" onclick="openHistory(${r.id})">Open</button> <button class="danger" onclick="deleteHistory(${r.id})">Delete</button></td></tr>`).join('')}</tbody></table>`:'<p>No saved reports yet.</p>';
+}
+function openHistory(id){
+ const r=reports.find(x=>x.id===id);if(!r)return;
+ const index=vessels.findIndex(v=>v.name===r.vessel);if(index>=0)$('vessel').value=index;
+ Object.entries(r.data).forEach(([k,v])=>{if($(k))$(k).value=v});
+ currentId=id;currentReport=r.report;$('report').textContent=r.report;showTab('preview');
+}
+function deleteHistory(id){
+ if(confirm('Delete this report?')){reports=reports.filter(r=>r.id!==id);persist();renderHistory()}
+}
+function copyReport(){
+ if(!currentReport){alert('Generate a report first.');return}
+ navigator.clipboard.writeText(currentReport).then(()=>alert('Report copied.')).catch(()=>alert('Clipboard unavailable. Please select and copy the preview manually.'));
+}
+function downloadReport(){
+ if(!currentReport){alert('Generate a report first.');return}
+ const blob=new Blob([currentReport],{type:'text/plain;charset=utf-8'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Noon_Report_'+val('ref').replace(/\s/g,'_')+'.txt';a.click();URL.revokeObjectURL(a.href);
+}
+function clearForm(){
+ if(!confirm('Clear daily report fields?'))return;
+ fields.filter(id=>!['date','ref','voy','destination','speedMode'].includes(id)).forEach(id=>$(id).value='');
+ $('date').value=new Date().toISOString().slice(0,10);
+ $('destination').value='NGHI SON PLTSN';$('speedMode').value='NORMAL FULL';
+ currentReport='';currentId=null;$('report').textContent='Complete the report form and click Generate Report.';
+}
+function showTab(name){
+ document.querySelectorAll('main>section').forEach(s=>s.classList.add('hidden'));
+ $(name).classList.remove('hidden');
+ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+ if(name==='history')renderHistory();
+ if(name==='vessels')renderVessels();
+}
+init();
+</script>
+</body>
+</html>
